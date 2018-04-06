@@ -74,7 +74,7 @@ const (
 	//PROJECT_ID = "around-xxx"
 	//BT_INSTANCE = "around-post"
 	// Needs to update this URL if you deploy it to cloud.
-	ES_URL = "http://35.185.0.207:9200"
+	ES_URL = "http://35.196.69.127"
 )
 
 func handlerPost(w http.ResponseWriter, r *http.Request) {
