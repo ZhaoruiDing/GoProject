@@ -14,7 +14,16 @@ import  (
 	"context"
 )
 
-
+const (
+	INDEX = "around"
+	TYPE = "post"
+	DISTANCE = "200km"
+	// Needs to update
+	PROJECT_ID = "around-199521"
+	BT_INSTANCE = "around-post"
+	// Needs to update this URL if you deploy it to cloud.
+	ES_URL = "35.185.75.245:9200"
+)
 
 type Location struct {
 	Lat float64 `json:"lat"`
@@ -69,16 +78,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-const (
-	INDEX = "around"
-	TYPE = "post"
-	DISTANCE = "200km"
-	// Needs to update
-	PROJECT_ID = "around-199521"
-	BT_INSTANCE = "around-post"
-	// Needs to update this URL if you deploy it to cloud.
-	ES_URL = "35.185.75.245:9200"
-)
+
 
 func handlerPost(w http.ResponseWriter, r *http.Request) {
 	// Parse from body of request to get a json object.
