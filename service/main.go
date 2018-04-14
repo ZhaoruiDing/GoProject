@@ -223,4 +223,5 @@ func containsFilteredWords(s *string) bool{
 	for _, word := range dirtyWords{
 		return strings.Contains(*s, word)
 	}
+	return false
 }
