@@ -14,6 +14,9 @@ import  (
 	"context"
 	"io"
 	"cloud.google.com/go/storage"
+	"github.com/gorilla/mux"
+	"github.com/auth0/go-jwt-middleware"
+	"github.com/dgrijalva/jwt-go"
 )
 
 const (
@@ -24,7 +27,7 @@ const (
 	PROJECT_ID = "around-199521"
 	BT_INSTANCE = "around-post"
 	// Needs to update this URL if you deploy it to cloud.
-	ES_URL = "http://35.185.125.105:9200"
+	ES_URL = "http://35.227.112.13:9200"
 	BUCKET_NAME = "post-images-199521"
 )
 
@@ -40,7 +43,7 @@ type Post struct {
 	Location Location `json:"location"`
 	Url string `json:"url"`
 }
-
+var mySigningKey = []byte("mySecret")
 func main() {
 
 	// Create a client
@@ -76,9 +79,23 @@ func main() {
 		}
 	}
 
-	fmt.Println("started-service")
-	http.HandleFunc("/post", handlerPost)
-	http.HandleFunc("/search", handlerSearch)
+	fmt.Println("Started service successfully")
+	// Here we are instantiating the gorilla/mux router
+	r := mux.NewRouter()
+
+	var jwtMiddleware = jwtmiddleware.New(jwtmiddleware.Options{
+		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
+			return mySigningKey, nil
+		},
+		SigningMethod: jwt.SigningMethodHS256,
+	})
+
+	r.Handle("/post", jwtMiddleware.Handler(http.HandlerFunc(handlerPost))).Methods("POST")
+	r.Handle("/search", jwtMiddleware.Handler(http.HandlerFunc(handlerSearch))).Methods("GET")
+	r.Handle("/login", http.HandlerFunc(loginHandler)).Methods("POST")
+	r.Handle("/signup", http.HandlerFunc(signupHandler)).Methods("POST")
+
+	http.Handle("/", r)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -91,6 +108,11 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization")
 
+	user := r.Context().Value("user")
+	// user is actually a token, so cast it to be a token
+	claims := user.(*jwt.Token).Claims
+	//another type cast, transform it to be a MapClaims, which is an operable type
+	username := claims.(jwt.MapClaims)["username"]
 
 	// 32 << 20 is the maxMemory param for ParseMultipartForm, equals to 32MB (1MB = 1024 * 1024 bytes = 2^20 bytes)
 	// After you call ParseMultipartForm, the file will be saved in the server memory with maxMemory size.
@@ -102,7 +124,8 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 	lat, _ := strconv.ParseFloat(r.FormValue("lat"), 64)
 	lon, _ := strconv.ParseFloat(r.FormValue("lon"), 64)
 	p := &Post{
-		User:    "1111",
+
+		User:    username.(string),// need to turn it into a string, which was a interface
 		Message: r.FormValue("message"),
 		Location: Location{
 			Lat: lat,
